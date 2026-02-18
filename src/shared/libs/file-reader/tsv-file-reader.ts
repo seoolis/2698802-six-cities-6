@@ -1,5 +1,6 @@
 import { FileReader } from './file-reader.interface.js';
 import { readFileSync } from 'node:fs';
+import chalk from 'chalk';
 import {
   OfferType,
   HouseType,
@@ -20,21 +21,24 @@ export class TSVFileReader implements FileReader {
   public read(): void {
     try {
       this.rawData = readFileSync(this.filename, { encoding: 'utf-8' });
+      console.log(chalk.green(`Success with reading: ${this.filename}`));
     } catch (err) {
-      console.error(`Failed to read file: ${this.filename}`);
+      console.error(chalk.red(`Failed to read file: ${this.filename}`));
       throw err;
     }
   }
 
   public toArray(): OfferType[] {
     if (!this.rawData) {
-      throw new Error('File was not read');
+      throw new Error(chalk.red('File was not read'));
     }
 
     const lines = this.rawData
       .split('\n')
       .filter((row) => row.trim().length > 0)
       .slice(1);
+
+    console.log(chalk.blue(`Records found: ${lines.length}`));
 
     return lines.map((line) => this.parsing(line));
   }

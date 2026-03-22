@@ -15,7 +15,8 @@
     "compile": "tsc -p tsconfig.json",
     "clean": "rimraf dist",
     "ts": "ts-node",
-    "cli": "npm run ts -- src/main.cli.ts"
+    "cli": "npm run ts -- src/main.cli.ts",
+    "mock:server": "json-server ./mocks/mock-server-data.json --port 3123"
   },
   "devDependencies": {
     "@types/node": "18.16.3",

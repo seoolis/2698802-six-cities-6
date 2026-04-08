@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, Document, model } from 'mongoose';
 import { User, UserType } from '../../types/index.js';
 
 export interface UserDocument extends User, Document {
@@ -8,11 +8,34 @@ export interface UserDocument extends User, Document {
 
 const userSchema = new Schema<UserDocument>(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    avatar: { type: String },
-    password: { type: String, required: true },
-    type: { type: String, enum: Object.values(UserType), required: true },
+    email: {
+      type: String,
+      unique: true,
+      required: true,
+      match: [/^\S+@\S+\.\S+$/, 'Email is incorrect'],
+    },
+
+    name: {
+      type: String,
+      required: true,
+      minlength: [2, 'Min length for name is 2'],
+    },
+
+    avatar: {
+      type: String,
+      required: false,
+    },
+
+    password: {
+      type: String,
+      required: true,
+    },
+
+    type: {
+      type: String,
+      enum: Object.values(UserType),
+      required: true,
+    },
   },
   {
     timestamps: true,

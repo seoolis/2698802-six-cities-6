@@ -19,7 +19,7 @@ export function createOffer(offerData: string): OfferType {
     authorName,
     authorEmail,
     authorAvatar,
-    authorPassword,
+    _authorPassword,
     authorTypeStr,
     commentsCountStr,
     coordinatesStr,
@@ -34,7 +34,6 @@ export function createOffer(offerData: string): OfferType {
     name: authorName?.trim() ?? '',
     email: authorEmail?.trim() ?? '',
     avatar: authorAvatar?.trim() || undefined,
-    password: authorPassword?.trim() ?? '',
     type: authorTypeStr?.trim() as UserType,
   };
 

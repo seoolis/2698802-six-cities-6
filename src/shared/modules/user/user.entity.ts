@@ -1,49 +1,35 @@
 import { defaultClasses, getModelForClass, prop, modelOptions } from '@typegoose/typegoose';
-import { User, UserType } from '../../types/index.js';
-import { createSHA256 } from '../../helpers/index.js';
+import { createSHA256 } from '../../helpers/hash.js';
 
 export interface UserEntity extends defaultClasses.Base {}
 
 @modelOptions({
   schemaOptions: {
     collection: 'users',
+    timestamps: true,
   },
 })
-export class UserEntity extends defaultClasses.TimeStamps implements User {
-  @prop({ unique: true, required: true, trim: true })
+export class UserEntity extends defaultClasses.TimeStamps {
+  @prop({ unique: true, required: true })
   public email!: string;
 
-  @prop({ required: true, trim: true, minlength: 2 })
-  public name!: string;
+  @prop({ required: false, default: '' })
+  public avatarPath!: string;
 
-  @prop()
-  public avatar?: string;
+  @prop({ required: true, default: '' })
+  public firstname!: string;
 
-  @prop({
-    required: true,
-    enum: Object.values(UserType),
-  })
-  public type!: UserType;
+  @prop({ required: true, default: '' })
+  public lastname!: string;
 
-  @prop({ required: true })
-  private password!: string;
-
-  constructor(userData?: User) {
-    super();
-
-    if (userData) {
-      this.email = userData.email;
-      this.name = userData.name;
-      this.avatar = userData.avatar;
-      this.type = userData.type;
-    }
-  }
+  @prop({ required: true, default: '' })
+  private password?: string;
 
   public setPassword(password: string, salt: string) {
     this.password = createSHA256(password, salt);
   }
 
-  public getPassword(): string {
+  public getPassword(): string | undefined {
     return this.password;
   }
 }

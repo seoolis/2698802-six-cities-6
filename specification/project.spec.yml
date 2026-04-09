@@ -1,0 +1,449 @@
+openapi: 3.1.0
+info:
+  title: API "Шесть городов"
+  version: 1.0.0
+  description: REST API сервиса аренды жилья
+
+tags:
+  - name: users
+  - name: offers
+  - name: comments
+  - name: favorites
+
+paths:
+
+  /users/register:
+    post:
+      tags: [users]
+      summary: Регистрация
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+      responses:
+        "201":
+          description: Создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /users/login:
+    post:
+      tags: [users]
+      summary: Логин
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginUser'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+    get:
+      tags: [users]
+      summary: Проверка авторизации
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /offers:
+    get:
+      tags: [offers]
+      summary: Список предложений
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OfferPreview'
+
+    post:
+      tags: [offers]
+      summary: Создать предложение
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOffer'
+      responses:
+        "201":
+          description: Создано
+
+  /offers/{offerId}:
+    get:
+      tags: [offers]
+      summary: Детали
+      parameters:
+        - name: offerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Offer'
+
+    patch:
+      tags: [offers]
+      summary: Обновить
+      responses:
+        "200":
+          description: OK
+
+    delete:
+      tags: [offers]
+      summary: Удалить
+      responses:
+        "204":
+          description: OK
+
+  /offers/{offerId}/comments:
+    get:
+      tags: [comments]
+      summary: Комментарии
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+
+    post:
+      tags: [comments]
+      summary: Добавить комментарий
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComment'
+      responses:
+        "201":
+          description: Создано
+
+  /offers/premium:
+    get:
+      tags: [offers]
+      summary: Премиальные предложения
+      parameters:
+        - name: city
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/CityName'
+      responses:
+        "200":
+          description: OK
+
+  /favorites:
+    get:
+      tags: [favorites]
+      summary: Избранное
+      responses:
+        "200":
+          description: OK
+
+  /favorites/{offerId}:
+    post:
+      tags: [favorites]
+      summary: Добавить в избранное
+      responses:
+        "200":
+          description: OK
+
+    delete:
+      tags: [favorites]
+      summary: Удалить из избранного
+      responses:
+        "204":
+          description: OK
+
+components:
+
+  schemas:
+    CreateUser:
+      type: object
+      required: [email, password, firstname, lastname]
+      properties:
+        email:
+          type: string
+          format: email
+        avatarPath:
+          type: string
+        firstname:
+          type: string
+          minLength: 1
+          maxLength: 15
+        lastname:
+          type: string
+          minLength: 1
+          maxLength: 15
+        password:
+          type: string
+          minLength: 6
+          maxLength: 12
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        avatarPath:
+          type: string
+        firstname:
+          type: string
+        lastname:
+          type: string
+        type:
+          type: string
+          enum: [default, pro]
+
+    LoginUser:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    CreateOffer:
+      type: object
+      required:
+        - title
+        - description
+        - city
+        - previewImage
+        - photos
+        - isPremium
+        - type
+        - rooms
+        - guests
+        - price
+        - amenities
+        - coordinates
+      properties:
+        title:
+          type: string
+          minLength: 10
+          maxLength: 100
+
+        description:
+          type: string
+          minLength: 20
+          maxLength: 1024
+
+        publishedDate:
+          type: string
+          format: date
+
+        city:
+          $ref: '#/components/schemas/CityName'
+
+        previewImage:
+          type: string
+
+        photos:
+          type: array
+          minItems: 6
+          maxItems: 6
+          items:
+            type: string
+
+        isPremium:
+          type: boolean
+
+        rating:
+          type: number
+          minimum: 1
+          maximum: 5
+
+        type:
+          $ref: '#/components/schemas/HouseType'
+
+        rooms:
+          type: integer
+          minimum: 1
+          maximum: 8
+
+        guests:
+          type: integer
+          minimum: 1
+          maximum: 10
+
+        price:
+          type: integer
+          minimum: 100
+          maximum: 100000
+
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Amenity'
+
+        author:
+          type: string
+          description: userId
+
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+
+    Offer:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        publishedDate:
+          type: string
+        city:
+          $ref: '#/components/schemas/City'
+        previewImage:
+          type: string
+        photos:
+          type: array
+          items:
+            type: string
+        isPremium:
+          type: boolean
+        isFavorite:
+          type: boolean
+        rating:
+          type: number
+        type:
+          $ref: '#/components/schemas/HouseType'
+        rooms:
+          type: integer
+        guests:
+          type: integer
+        price:
+          type: integer
+        amenities:
+          type: array
+          items:
+            $ref: '#/components/schemas/Amenity'
+        author:
+          $ref: '#/components/schemas/User'
+        commentsCount:
+          type: integer
+        coordinates:
+          $ref: '#/components/schemas/Coordinates'
+
+    OfferPreview:
+      type: object
+      properties:
+        title:
+          type: string
+        price:
+          type: integer
+        city:
+          $ref: '#/components/schemas/City'
+        previewImage:
+          type: string
+        isPremium:
+          type: boolean
+        isFavorite:
+          type: boolean
+        rating:
+          type: number
+        commentsCount:
+          type: integer
+
+    CreateComment:
+      type: object
+      required: [text, rating]
+      properties:
+        text:
+          type: string
+          minLength: 5
+          maxLength: 1024
+        rating:
+          type: number
+          minimum: 1
+          maximum: 5
+
+    Comment:
+      type: object
+      properties:
+        text:
+          type: string
+        publishDate:
+          type: string
+        rating:
+          type: number
+        author:
+          $ref: '#/components/schemas/User'
+
+    CityName:
+      type: string
+      enum:
+        - Paris
+        - Cologne
+        - Brussels
+        - Amsterdam
+        - Hamburg
+        - Dusseldorf
+
+    City:
+      type: object
+      properties:
+        name:
+          $ref: '#/components/schemas/CityName'
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    Coordinates:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    HouseType:
+      type: string
+      enum: [apartment, house, room, hotel]
+
+    Amenity:
+      type: string
+      enum:
+        - Breakfast
+        - Air conditioning
+        - Laptop friendly workspace
+        - Baby seat
+        - Washer
+        - Towels
+        - Fridge

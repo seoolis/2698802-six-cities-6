@@ -60,8 +60,9 @@ export function createOffer(offerData: string): OfferType {
     price: Number.parseInt(priceStr, 10),
     amenities: amenitiesStr
       ?.split(';')
-      .map((a) => a.trim() as AmenitiesType)
-      .filter((a) => a in AmenitiesType) ?? [],
+      .map((a) => a.trim())
+      .filter((a) => Object.values(AmenitiesType).includes(a as AmenitiesType))
+      .map((a) => a as AmenitiesType) ?? [],
     author,
     commentsCount: Number.parseInt(commentsCountStr, 10),
     coordinates: {

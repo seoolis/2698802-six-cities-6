@@ -5,6 +5,7 @@ import { CreateUserDto } from './dto/create-user.dto.js';
 import { inject, injectable } from 'inversify';
 import { Component } from '../../types/index.js';
 import { Logger } from '../../libs/logger/index.js';
+import { UserType } from '../../types/enums/user.type.enum.js';
 
 @injectable()
 export class DefaultUserService implements UserService {
@@ -15,10 +16,10 @@ export class DefaultUserService implements UserService {
 
   public async create(dto: CreateUserDto, salt: string): Promise<DocumentType<UserEntity>> {
     const user = new this.userModel({
+      name: dto.name,
       email: dto.email,
-      avatarPath: dto.avatarPath,
-      firstname: dto.firstname,
-      lastname: dto.lastname,
+      avatarPath: dto.avatarPath ?? '',
+      type: dto.type as UserType,
     });
 
     user.setPassword(dto.password, salt);

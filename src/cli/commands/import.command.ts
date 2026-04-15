@@ -7,6 +7,8 @@ import { DatabaseClient, MongoDatabaseClient } from '../../shared/libs/database-
 import { Logger } from '../../shared/libs/logger/index.js';
 import { DefaultUserService, UserModel } from '../../shared/modules/user/index.js';
 import { DefaultOfferService, OfferModel } from '../../shared/modules/offer/index.js';
+import { DefaultCommentService, CommentModel } from '../../shared/modules/comment/index.js';
+import { DefaultFavoriteService, FavoriteModel } from '../../shared/modules/favorite/index.js';
 import { DEFAULT_DB_PORT, DEFAULT_USER_PASSWORD } from './command.constant.js';
 import { OfferType } from '../../shared/types/index.js';
 import { ConsoleLogger } from '../../shared/libs/logger/console.logger.js';
@@ -21,7 +23,9 @@ export class ImportCommand implements Command {
   constructor() {
     this.logger = new ConsoleLogger();
     this.userService = new DefaultUserService(this.logger, UserModel);
-    this.offerService = new DefaultOfferService(this.logger, OfferModel);
+    const favoriteService = new DefaultFavoriteService(this.logger, FavoriteModel);
+    const commentService = new DefaultCommentService(this.logger, CommentModel, OfferModel);
+    this.offerService = new DefaultOfferService(this.logger, OfferModel, commentService, favoriteService);
     this.databaseClient = new MongoDatabaseClient(this.logger);
 
     this.onImportedLine = this.onImportedLine.bind(this);
@@ -33,10 +37,10 @@ export class ImportCommand implements Command {
       const offer: OfferType = createOffer(line);
 
       const user = await this.userService.findOrCreate({
+        name: offer.author.name,
         email: offer.author.email,
-        firstname: offer.author.name.split(' ')[0] || 'Unknown',
-        lastname: offer.author.name.split(' ').slice(1).join(' ') || '',
         avatarPath: offer.author.avatar || '',
+        type: offer.author.type,
         password: DEFAULT_USER_PASSWORD,
       }, this.salt);
 

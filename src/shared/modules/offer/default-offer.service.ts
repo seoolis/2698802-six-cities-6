@@ -21,7 +21,6 @@ export class DefaultOfferService implements OfferService {
   public async create(dto: CreateOfferDto): Promise<DocumentType<OfferEntity>> {
     const result = await this.offerModel.create({
       ...dto,
-      // isFavorite is per-user, but schema requires a field. Keep false in DB.
       isFavorite: false,
       commentsCount: 0,
     });

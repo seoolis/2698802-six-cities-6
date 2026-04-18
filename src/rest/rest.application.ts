@@ -17,7 +17,8 @@ export class RestApplication {
     @inject(Component.DatabaseClient) private readonly databaseClient: DatabaseClient,
     @inject(Component.ExceptionFilter) private readonly appExceptionFilter: ExceptionFilter,
     @inject(Component.UserController) private readonly userController: Controller,
-    // добавление контроллеров
+    @inject(Component.OfferController) private readonly offerController: Controller,
+    @inject(Component.FavoriteController) private readonly favoriteController: Controller,
   ) {
     this.server = express();
   }
@@ -39,11 +40,11 @@ export class RestApplication {
     this.server.listen(port);
   }
 
-  //добавление _initControllers с контроллером
-  /*private async _initControllers() {
-    this.server.use(...);
+  private async _initControllers() {
     this.server.use('/users', this.userController.router);
-  }*/
+    this.server.use('/offers', this.offerController.router);
+    this.server.use('/favorites', this.favoriteController.router);
+  }
 
   private async _initMiddleware() {
     this.server.use(express.json());
@@ -65,7 +66,6 @@ export class RestApplication {
     await this._initMiddleware();
     this.logger.info('App-level middleware initialization completed');
 
-    //логгер контроллеров
     this.logger.info('Init controllers');
     await this._initControllers();
     this.logger.info('Controller initialization completed');

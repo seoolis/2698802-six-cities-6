@@ -4,6 +4,8 @@ import { Component } from '../shared/types/index.js';
 import { Logger, PinoLogger } from '../shared/libs/logger/index.js';
 import { Config, RestConfig, RestSchema } from '../shared/libs/config/index.js';
 import { DatabaseClient, MongoDatabaseClient } from '../shared/libs/database-client/index.js';
+import { AppExceptionFilter, ExceptionFilter } from '../shared/libs/rest/index.js';
+import { SimpleTokenService, TokenService } from '../shared/libs/token/index.js';
 
 export function createRestApplicationContainer() {
   const container = new Container();
@@ -26,6 +28,16 @@ export function createRestApplicationContainer() {
   container
     .bind<DatabaseClient>(Component.DatabaseClient)
     .to(MongoDatabaseClient)
+    .inSingletonScope();
+
+  container
+    .bind<ExceptionFilter>(Component.ExceptionFilter)
+    .to(AppExceptionFilter)
+    .inSingletonScope();
+
+  container
+    .bind<TokenService>(Component.TokenService)
+    .to(SimpleTokenService)
     .inSingletonScope();
 
   return container;

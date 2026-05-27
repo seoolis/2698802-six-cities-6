@@ -7,6 +7,7 @@ import {
   HttpMethod,
   ValidateDtoMiddleware,
   ValidateObjectIdMiddleware,
+  PrivateRouteMiddleware,
 } from '../../libs/rest/index.js';
 import {Logger} from '../../libs/logger/index.js';
 import {Component} from '../../types/index.js';
@@ -48,7 +49,10 @@ export class OfferController extends BaseController {
       path: '/',
       method: HttpMethod.Post,
       handler: this.create,
-      middlewares: [new ValidateDtoMiddleware(CreateOfferDto)]
+      middlewares: [
+        new PrivateRouteMiddleware(),
+        new ValidateDtoMiddleware(CreateOfferDto)
+      ]
     });
     this.addRoute({
       path: '/premium',
@@ -60,6 +64,7 @@ export class OfferController extends BaseController {
       method: HttpMethod.Patch,
       handler: this.update,
       middlewares: [
+        new PrivateRouteMiddleware(),
         new ValidateObjectIdMiddleware('offerId'),
         new ValidateDtoMiddleware(UpdateOfferDto),
         new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId')
@@ -70,6 +75,7 @@ export class OfferController extends BaseController {
       method: HttpMethod.Delete,
       handler: this.delete,
       middlewares: [
+        new PrivateRouteMiddleware(),
         new ValidateObjectIdMiddleware('offerId'),
         new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId')
       ]
@@ -127,6 +133,9 @@ export class OfferController extends BaseController {
 
     this.ok(res, fillDTO(OfferRdo, offer));
   }
+
+  //public async create({ body, tokenPayload }: CreateOfferRequest, res: Response): Promise<void> {
+  //     const result = await this.offerService.create({ ...body, userId: tokenPayload.id });
 
   public async create(req: AuthRequest, res: Response): Promise<void> {
     const userId = this.getUserIdOrThrow(req);

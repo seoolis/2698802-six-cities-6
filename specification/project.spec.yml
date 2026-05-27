@@ -214,38 +214,35 @@ components:
   schemas:
     CreateUser:
       type: object
-      required: [email, password, firstname, lastname]
+      required: [name, email, password, type]
       properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 15
         email:
           type: string
           format: email
         avatarPath:
           type: string
-        firstname:
-          type: string
-          minLength: 1
-          maxLength: 15
-        lastname:
-          type: string
-          minLength: 1
-          maxLength: 15
         password:
           type: string
           minLength: 6
           maxLength: 12
+        type:
+          type: string
+          enum: [default, pro]
 
     User:
       type: object
       properties:
         id:
           type: string
+        name:
+          type: string
         email:
           type: string
         avatarPath:
-          type: string
-        firstname:
-          type: string
-        lastname:
           type: string
         type:
           type: string
@@ -383,10 +380,17 @@ components:
     OfferPreview:
       type: object
       properties:
+        id:
+          type: string
         title:
           type: string
         price:
           type: integer
+        type:
+          $ref: '#/components/schemas/HouseType'
+        publishedDate:
+          type: string
+          format: date-time
         city:
           $ref: '#/components/schemas/City'
         previewImage:

@@ -25,6 +25,8 @@ export function createOffer(offerData: string): OfferType {
     coordinatesStr,
   ] = offerData.split('\t');
 
+  void _authorPassword;
+
   const [latitudeStr, longitudeStr] = coordinatesStr.split(',');
 
   const latitude = Number.parseFloat(latitudeStr);

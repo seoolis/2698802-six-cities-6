@@ -1,7 +1,7 @@
 import { inject, injectable } from 'inversify';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { BaseController, HttpError, HttpMethod } from '../../libs/rest/index.js';
+import { BaseController, HttpError, HttpMethod, ValidateObjectIdMiddleware } from '../../libs/rest/index.js';
 import { Logger } from '../../libs/logger/index.js';
 import { Component } from '../../types/index.js';
 import { TokenService } from '../../libs/token/token-service.interface.js';
@@ -22,8 +22,18 @@ export class FavoriteController extends BaseController {
     this.logger.info('Register routes for FavoriteController…');
 
     this.addRoute({ path: '/', method: HttpMethod.Get, handler: this.index });
-    this.addRoute({ path: '/:offerId', method: HttpMethod.Post, handler: this.add });
-    this.addRoute({ path: '/:offerId', method: HttpMethod.Delete, handler: this.remove });
+    this.addRoute({
+      path: '/:offerId',
+      method: HttpMethod.Post,
+      handler: this.add,
+      middlewares: [new ValidateObjectIdMiddleware('offerId')]
+    });
+    this.addRoute({
+      path: '/:offerId',
+      method: HttpMethod.Delete,
+      handler: this.remove,
+      middlewares: [new ValidateObjectIdMiddleware('offerId')]
+    });
   }
 
   private getUserIdOrThrow(req: AuthRequest): string {

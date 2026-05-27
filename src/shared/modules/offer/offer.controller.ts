@@ -1,16 +1,26 @@
-import { inject, injectable } from 'inversify';
-import { Request, Response } from 'express';
-import { StatusCodes } from 'http-status-codes';
-import { BaseController, HttpError, HttpMethod } from '../../libs/rest/index.js';
-import { Logger } from '../../libs/logger/index.js';
-import { Component } from '../../types/index.js';
-import { OfferService } from './offer-service.interface.js';
-import { CreateOfferDto } from './dto/create-offer.dto.js';
-import { UpdateOfferDto } from './dto/update-offer.dto.js';
-import { TokenService } from '../../libs/token/token-service.interface.js';
-import { fillDTO } from '../../helpers/index.js';
-import { OfferRdo } from './rdo/offer.rdo.js';
-import { OfferPreviewRdo } from './rdo/offer-preview.rdo.js';
+import {inject, injectable} from 'inversify';
+import {Request, Response} from 'express';
+import {StatusCodes} from 'http-status-codes';
+import {
+  BaseController, DocumentExistsMiddleware,
+  HttpError,
+  HttpMethod,
+  ValidateDtoMiddleware,
+  ValidateObjectIdMiddleware,
+} from '../../libs/rest/index.js';
+import {Logger} from '../../libs/logger/index.js';
+import {Component} from '../../types/index.js';
+import {OfferService} from './offer-service.interface.js';
+import {CreateOfferDto} from './dto/create-offer.dto.js';
+import {UpdateOfferDto} from './dto/update-offer.dto.js';
+import {TokenService} from '../../libs/token/token-service.interface.js';
+import {fillDTO} from '../../helpers/index.js';
+import {OfferRdo} from './rdo/offer.rdo.js';
+import {OfferPreviewRdo} from './rdo/offer-preview.rdo.js';
+import {
+  DEFAULT_DISCUSSED_OFFER_COUNT,
+  DEFAULT_NEW_OFFER_COUNT
+} from './offer.constant.js';
 
 type AuthRequest = Request & { headers: { authorization?: string } };
 
@@ -22,14 +32,59 @@ export class OfferController extends BaseController {
     @inject(Component.TokenService) private readonly tokenService: TokenService,
   ) {
     super(logger);
-    this.logger.info('Register routes for OfferController…');
+    this.logger.info('Register routes for OfferController...');
+    this.addRoute({
+      path: '/:offerId',
+      method: HttpMethod.Get,
+      handler: this.show,
+      middlewares: [
+        new ValidateObjectIdMiddleware('offerId'),
+        new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId'),
+      ]
+    });
 
-    this.addRoute({ path: '/', method: HttpMethod.Get, handler: this.index });
-    this.addRoute({ path: '/', method: HttpMethod.Post, handler: this.create });
-    this.addRoute({ path: '/premium', method: HttpMethod.Get, handler: this.premium });
-    this.addRoute({ path: '/:offerId', method: HttpMethod.Get, handler: this.show });
-    this.addRoute({ path: '/:offerId', method: HttpMethod.Patch, handler: this.update });
-    this.addRoute({ path: '/:offerId', method: HttpMethod.Delete, handler: this.delete });
+    this.addRoute({path: '/', method: HttpMethod.Get, handler: this.index});
+    this.addRoute({
+      path: '/',
+      method: HttpMethod.Post,
+      handler: this.create,
+      middlewares: [new ValidateDtoMiddleware(CreateOfferDto)]
+    });
+    this.addRoute({
+      path: '/premium',
+      method: HttpMethod.Get,
+      handler: this.premium
+    });
+    this.addRoute({
+      path: '/:offerId',
+      method: HttpMethod.Patch,
+      handler: this.update,
+      middlewares: [
+        new ValidateObjectIdMiddleware('offerId'),
+        new ValidateDtoMiddleware(UpdateOfferDto),
+        new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId')
+      ]
+    });
+    this.addRoute({
+      path: '/:offerId',
+      method: HttpMethod.Delete,
+      handler: this.delete,
+      middlewares: [
+        new ValidateObjectIdMiddleware('offerId'),
+        new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId')
+      ]
+    });
+
+    this.addRoute({
+      path: '/bundles/new',
+      method: HttpMethod.Get,
+      handler: this.getNew
+    });
+    this.addRoute({
+      path: '/bundles/discussed',
+      method: HttpMethod.Get,
+      handler: this.getDiscussed
+    });
   }
 
   private getUserIdOrThrow(req: AuthRequest): string {
@@ -129,5 +184,14 @@ export class OfferController extends BaseController {
 
     res.status(StatusCodes.NO_CONTENT).send();
   }
-}
 
+  public async getNew(_req: Request, res: Response) {
+    const newOffers = await this.offerService.findNew(DEFAULT_NEW_OFFER_COUNT);
+    this.ok(res, fillDTO(OfferRdo, newOffers));
+  }
+
+  public async getDiscussed(_req: Request, res: Response) {
+    const discussedOffers = await this.offerService.findDiscussed(DEFAULT_DISCUSSED_OFFER_COUNT);
+    this.ok(res, fillDTO(OfferRdo, discussedOffers));
+  }
+}

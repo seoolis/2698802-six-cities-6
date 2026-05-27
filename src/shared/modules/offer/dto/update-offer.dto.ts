@@ -65,10 +65,6 @@ export class UpdateOfferDto {
   public isPremium?: boolean;
 
   @IsOptional()
-  @IsBoolean({ message: 'isFavorite must be boolean' })
-  public isFavorite?: boolean;
-
-  @IsOptional()
   @IsNumber({}, { message: 'rating must be a number' })
   @Min(1, { message: 'rating must be at least 1' })
   @Max(5, { message: 'rating must be at most 5' })

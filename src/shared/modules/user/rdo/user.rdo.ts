@@ -1,18 +1,20 @@
-import { Expose } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
+import { DEFAULT_AVATAR_FILE_NAME } from '../user.constant.js';
 
 export class UserRdo {
-  @Expose()
-  public id: string;
+  @Expose({ name: '_id' })
+  public id!: string;
 
   @Expose()
-  public email: string;
+  public name!: string;
 
   @Expose()
-  public avatarPath: string;
+  public email!: string;
 
   @Expose()
-  public firstname: string;
+  @Transform(({ value }) => value || DEFAULT_AVATAR_FILE_NAME)
+  public avatarPath!: string;
 
   @Expose()
-  public lastname: string;
+  public type!: string;
 }

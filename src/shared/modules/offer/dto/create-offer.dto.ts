@@ -11,6 +11,7 @@ import {
   IsIn,
   IsInt,
   IsMongoId,
+  IsOptional,
   IsNumber,
   IsString,
   Max,
@@ -84,8 +85,9 @@ export class CreateOfferDto {
   @IsEnum(AmenitiesType, { each: true, message: 'amenities must contain valid items' })
   public amenities!: AmenitiesType[];
 
+  @IsOptional()
   @IsMongoId({ message: CreateOfferValidationMessage.userId.invalidId })
-  public author!: string;
+  public author?: string;
 
   @ValidateNested()
   @Type(() => CoordinatesDto)

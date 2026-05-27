@@ -20,7 +20,7 @@ export class DefaultUserService implements UserService {
     const user = new this.userModel({
       name: dto.name,
       email: dto.email,
-      avatarPath: dto.avatarPath ?? '',
+      avatarPath: dto.avatarPath || DEFAULT_AVATAR_FILE_NAME,
       type: dto.type as UserType,
     });
 

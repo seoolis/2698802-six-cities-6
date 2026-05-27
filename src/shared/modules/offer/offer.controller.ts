@@ -18,7 +18,8 @@ import {
   BaseController,
   DocumentExistsMiddleware,
   HttpMethod,
-  PrivateRouteMiddleware, UploadFileMiddleware,
+  PrivateRouteMiddleware,
+  UploadFileMiddleware,
   ValidateDtoMiddleware,
   ValidateObjectIdMiddleware,
 } from '../../libs/rest/index.js';
@@ -29,21 +30,11 @@ import { UploadImageRdo } from './rdo/upload-image.rdo.js';
 export class OfferController extends BaseController {
   constructor(
     @inject(Component.Logger) protected readonly logger: Logger,
-    @inject(Component.CommentService) private readonly commentService: CommentService,
     @inject(Component.Config) private readonly configService: Config<RestSchema>,
     @inject(Component.OfferService) private readonly offerService: OfferService,
   ) {
     super(logger);
     this.logger.info('Register routes for OfferController...');
-    this.addRoute({
-      path: '/:offerId',
-      method: HttpMethod.Get,
-      handler: this.show,
-      middlewares: [
-        new ValidateObjectIdMiddleware('offerId'),
-        new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId'),
-      ]
-    });
 
     this.addRoute({path: '/', method: HttpMethod.Get, handler: this.index});
     this.addRoute({
@@ -59,6 +50,25 @@ export class OfferController extends BaseController {
       path: '/premium',
       method: HttpMethod.Get,
       handler: this.premium
+    });
+    this.addRoute({
+      path: '/bundles/new',
+      method: HttpMethod.Get,
+      handler: this.getNew
+    });
+    this.addRoute({
+      path: '/bundles/discussed',
+      method: HttpMethod.Get,
+      handler: this.getDiscussed
+    });
+    this.addRoute({
+      path: '/:offerId',
+      method: HttpMethod.Get,
+      handler: this.show,
+      middlewares: [
+        new ValidateObjectIdMiddleware('offerId'),
+        new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId'),
+      ]
     });
     this.addRoute({
       path: '/:offerId',
@@ -81,18 +91,6 @@ export class OfferController extends BaseController {
         new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId')
       ]
     });
-
-    this.addRoute({
-      path: '/bundles/new',
-      method: HttpMethod.Get,
-      handler: this.getNew
-    });
-    this.addRoute({
-      path: '/bundles/discussed',
-      method: HttpMethod.Get,
-      handler: this.getDiscussed
-    });
-
     this.addRoute({
       path: '/:offerId/image',
       method: HttpMethod.Post,
@@ -100,6 +98,7 @@ export class OfferController extends BaseController {
       middlewares: [
         new PrivateRouteMiddleware(),
         new ValidateObjectIdMiddleware('offerId'),
+        new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId'),
         new UploadFileMiddleware(this.configService.get('UPLOAD_DIRECTORY'), 'image'),
       ]
     });
@@ -107,7 +106,8 @@ export class OfferController extends BaseController {
 
   public async index(req: Request, res: Response): Promise<void> {
     const limitRaw = req.query.limit;
-    const limit = typeof limitRaw === 'string' ? Number.parseInt(limitRaw, 10) : undefined;
+    const parsedLimit = typeof limitRaw === 'string' ? Number.parseInt(limitRaw, 10) : undefined;
+    const limit = parsedLimit !== undefined && !Number.isNaN(parsedLimit) ? parsedLimit : undefined;
     const offers = await this.offerService.find(limit, req.tokenPayload?.id);
     this.ok(res, fillDTO(OfferPreviewRdo, offers));
   }
@@ -128,9 +128,6 @@ export class OfferController extends BaseController {
 
     this.ok(res, fillDTO(OfferRdo, offer));
   }
-
-  //public async create({ body, tokenPayload }: CreateOfferRequest, res: Response): Promise<void> {
-  //     const result = await this.offerService.create({ ...body, userId: tokenPayload.id });
 
   public async create(req: Request, res: Response): Promise<void> {
     const userId = req.tokenPayload?.id;
@@ -177,20 +174,30 @@ export class OfferController extends BaseController {
     res.status(StatusCodes.NO_CONTENT).send();
   }
 
-  public async getNew(_req: Request, res: Response) {
-    const newOffers = await this.offerService.findNew(DEFAULT_NEW_OFFER_COUNT, _req.tokenPayload?.id);
+  public async getNew(req: Request, res: Response) {
+    const newOffers = await this.offerService.findNew(DEFAULT_NEW_OFFER_COUNT, req.tokenPayload?.id);
     this.ok(res, fillDTO(OfferRdo, newOffers));
   }
 
-  public async getDiscussed(_req: Request, res: Response) {
-    const discussedOffers = await this.offerService.findDiscussed(DEFAULT_DISCUSSED_OFFER_COUNT, _req.tokenPayload?.id);
+  public async getDiscussed(req: Request, res: Response) {
+    const discussedOffers = await this.offerService.findDiscussed(DEFAULT_DISCUSSED_OFFER_COUNT, req.tokenPayload?.id);
     this.ok(res, fillDTO(OfferRdo, discussedOffers));
   }
 
-  public async uploadImage({ params, file } : Request<ParamOfferId>, res: Response) {
-    const { offerId } = params;
-    const updateDto = { image: file?.filename };
-    await this.offerService.updateById(offerId, updateDto);
-    this.created(res, fillDTO(UploadImageRdo, updateDto));
+  public async uploadImage(req: Request, res: Response) {
+    const userId = req.tokenPayload?.id;
+    if (!userId) {
+      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Unauthorized', 'OfferController');
+    }
+
+    const { offerId } = req.params;
+    const updateDto = { previewImage: req.file?.filename };
+    const updated = await this.offerService.updateById(offerId, updateDto, userId);
+
+    if (!updated) {
+      throw new HttpError(StatusCodes.FORBIDDEN, 'Forbidden', 'OfferController');
+    }
+
+    this.created(res, fillDTO(UploadImageRdo, { image: updateDto.previewImage }));
   }
 }

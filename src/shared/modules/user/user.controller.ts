@@ -7,6 +7,7 @@ import {
   HttpError,
   HttpMethod, UploadFileMiddleware,
   PrivateRouteMiddleware,
+  PublicRouteMiddleware,
   ValidateDtoMiddleware,
   ValidateObjectIdMiddleware,
 } from '../../libs/rest/index.js';
@@ -40,7 +41,10 @@ export class UserController extends BaseController {
       path: '/register',
       method: HttpMethod.Post,
       handler: this.create,
-      middlewares: [new ValidateDtoMiddleware(CreateUserDto)]
+      middlewares: [
+        new PublicRouteMiddleware(),
+        new ValidateDtoMiddleware(CreateUserDto),
+      ]
     });
 
     this.addRoute({
@@ -122,8 +126,14 @@ export class UserController extends BaseController {
 
   public async uploadAvatar({ params, file }: Request, res: Response) {
     const { userId } = params;
-    const uploadFile = { avatarPath: file?.filename };
-    await this.userService.updateById(userId, uploadFile);
+    const avatarPath = file?.filename;
+
+    if (!avatarPath) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'Avatar file is required', 'UserController');
+    }
+
+    const uploadFile = { avatarPath };
+    await this.userService.updateAvatar(userId, avatarPath);
     this.created(res, fillDTO(UploadUserAvatarRdo, { filepath: uploadFile.avatarPath }));
   }
 }

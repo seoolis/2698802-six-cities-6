@@ -12,6 +12,12 @@ export class OfferPreviewRdo {
   public price!: number;
 
   @Expose()
+  public type!: string;
+
+  @Expose()
+  public publishedDate!: Date;
+
+  @Expose()
   @Transform(({ obj }) => CITIES[obj.city] ?? { name: obj.city, latitude: 0, longitude: 0 })
   public city!: { name: string; latitude: number; longitude: number };
 

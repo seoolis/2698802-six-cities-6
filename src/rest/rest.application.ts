@@ -59,6 +59,7 @@ export class RestApplication {
     await mkdir(uploadDirectory, { recursive: true });
     const authenticateMiddleware = new ParseTokenMiddleware(this.config.get('JWT_SECRET'));
 
+    this.server.use(cors());
     this.server.use(express.json());
     this.server.use(
       STATIC_UPLOAD_ROUTE,
@@ -69,7 +70,6 @@ export class RestApplication {
       express.static(this.config.get('STATIC_DIRECTORY_PATH'))
     );
     this.server.use(authenticateMiddleware.execute.bind(authenticateMiddleware));
-    this.server.use(cors());
   }
 
   private async _initExceptionFilters() {

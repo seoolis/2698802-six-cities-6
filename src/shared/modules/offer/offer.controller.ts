@@ -14,7 +14,6 @@ import {Component} from '../../types/index.js';
 import {OfferService} from './offer-service.interface.js';
 import {CreateOfferDto} from './dto/create-offer.dto.js';
 import {UpdateOfferDto} from './dto/update-offer.dto.js';
-import {TokenService} from '../../libs/token/token-service.interface.js';
 import {fillDTO} from '../../helpers/index.js';
 import {OfferRdo} from './rdo/offer.rdo.js';
 import {OfferPreviewRdo} from './rdo/offer-preview.rdo.js';
@@ -23,14 +22,11 @@ import {
   DEFAULT_NEW_OFFER_COUNT
 } from './offer.constant.js';
 
-type AuthRequest = Request & { headers: { authorization?: string } };
-
 @injectable()
 export class OfferController extends BaseController {
   constructor(
     @inject(Component.Logger) protected readonly logger: Logger,
     @inject(Component.OfferService) private readonly offerService: OfferService,
-    @inject(Component.TokenService) private readonly tokenService: TokenService,
   ) {
     super(logger);
     this.logger.info('Register routes for OfferController...');
@@ -93,27 +89,10 @@ export class OfferController extends BaseController {
     });
   }
 
-  private getUserIdOrThrow(req: AuthRequest): string {
-    const raw = req.headers.authorization ?? '';
-    const match = raw.match(/^Bearer\s+(.+)$/i);
-    const token = match?.[1];
-
-    if (!token) {
-      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Authorization required', 'OfferController');
-    }
-
-    const userId = this.tokenService.getUserId(token);
-    if (!userId) {
-      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Invalid token', 'OfferController');
-    }
-
-    return userId;
-  }
-
   public async index(req: Request, res: Response): Promise<void> {
     const limitRaw = req.query.limit;
     const limit = typeof limitRaw === 'string' ? Number.parseInt(limitRaw, 10) : undefined;
-    const offers = await this.offerService.find(limit);
+    const offers = await this.offerService.find(limit, req.tokenPayload?.id);
     this.ok(res, fillDTO(OfferPreviewRdo, offers));
   }
 
@@ -123,13 +102,13 @@ export class OfferController extends BaseController {
       throw new HttpError(StatusCodes.BAD_REQUEST, 'Query param "city" is required', 'OfferController');
     }
 
-    const offers = await this.offerService.findPremiumByCity(city);
+    const offers = await this.offerService.findPremiumByCity(city, undefined, req.tokenPayload?.id);
     this.ok(res, fillDTO(OfferPreviewRdo, offers));
   }
 
   public async show(req: Request, res: Response): Promise<void> {
     const offerId = req.params.offerId;
-    const offer = await this.offerService.findById(offerId);
+    const offer = await this.offerService.findById(offerId, req.tokenPayload?.id);
 
     this.ok(res, fillDTO(OfferRdo, offer));
   }
@@ -137,8 +116,11 @@ export class OfferController extends BaseController {
   //public async create({ body, tokenPayload }: CreateOfferRequest, res: Response): Promise<void> {
   //     const result = await this.offerService.create({ ...body, userId: tokenPayload.id });
 
-  public async create(req: AuthRequest, res: Response): Promise<void> {
-    const userId = this.getUserIdOrThrow(req);
+  public async create(req: Request, res: Response): Promise<void> {
+    const userId = req.tokenPayload?.id;
+    if (!userId) {
+      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Unauthorized', 'OfferController');
+    }
     const dto = req.body as CreateOfferDto;
 
     dto.author = userId;
@@ -148,8 +130,11 @@ export class OfferController extends BaseController {
     this.created(res, fillDTO(OfferRdo, offer));
   }
 
-  public async update(req: AuthRequest, res: Response): Promise<void> {
-    const userId = this.getUserIdOrThrow(req);
+  public async update(req: Request, res: Response): Promise<void> {
+    const userId = req.tokenPayload?.id;
+    if (!userId) {
+      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Unauthorized', 'OfferController');
+    }
     const offerId = req.params.offerId;
     const dto = req.body as UpdateOfferDto;
 
@@ -161,8 +146,11 @@ export class OfferController extends BaseController {
     this.ok(res, fillDTO(OfferRdo, updated));
   }
 
-  public async delete(req: AuthRequest, res: Response): Promise<void> {
-    const userId = this.getUserIdOrThrow(req);
+  public async delete(req: Request, res: Response): Promise<void> {
+    const userId = req.tokenPayload?.id;
+    if (!userId) {
+      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Unauthorized', 'OfferController');
+    }
     const offerId = req.params.offerId;
 
     const deleted = await this.offerService.deleteById(offerId, userId);
@@ -174,12 +162,12 @@ export class OfferController extends BaseController {
   }
 
   public async getNew(_req: Request, res: Response) {
-    const newOffers = await this.offerService.findNew(DEFAULT_NEW_OFFER_COUNT);
+    const newOffers = await this.offerService.findNew(DEFAULT_NEW_OFFER_COUNT, _req.tokenPayload?.id);
     this.ok(res, fillDTO(OfferRdo, newOffers));
   }
 
   public async getDiscussed(_req: Request, res: Response) {
-    const discussedOffers = await this.offerService.findDiscussed(DEFAULT_DISCUSSED_OFFER_COUNT);
+    const discussedOffers = await this.offerService.findDiscussed(DEFAULT_DISCUSSED_OFFER_COUNT, _req.tokenPayload?.id);
     this.ok(res, fillDTO(OfferRdo, discussedOffers));
   }
 }

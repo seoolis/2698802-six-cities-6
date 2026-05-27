@@ -48,12 +48,16 @@ paths:
               schema:
                 type: object
                 properties:
+                  email:
+                    type: string
                   token:
                     type: string
 
     get:
       tags: [users]
       summary: Проверка авторизации
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: OK
@@ -79,6 +83,8 @@ paths:
     post:
       tags: [offers]
       summary: Создать предложение
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -110,6 +116,8 @@ paths:
     patch:
       tags: [offers]
       summary: Обновить
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: OK
@@ -117,6 +125,8 @@ paths:
     delete:
       tags: [offers]
       summary: Удалить
+      security:
+        - bearerAuth: []
       responses:
         "204":
           description: OK
@@ -138,6 +148,8 @@ paths:
     post:
       tags: [comments]
       summary: Добавить комментарий
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -166,6 +178,8 @@ paths:
     get:
       tags: [favorites]
       summary: Избранное
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: OK
@@ -174,6 +188,8 @@ paths:
     post:
       tags: [favorites]
       summary: Добавить в избранное
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: OK
@@ -181,11 +197,19 @@ paths:
     delete:
       tags: [favorites]
       summary: Удалить из избранного
+      security:
+        - bearerAuth: []
       responses:
         "204":
           description: OK
 
 components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
 
   schemas:
     CreateUser:
@@ -308,10 +332,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Amenity'
-
-        author:
-          type: string
-          description: userId
 
         coordinates:
           $ref: '#/components/schemas/Coordinates'

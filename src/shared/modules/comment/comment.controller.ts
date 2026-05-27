@@ -2,12 +2,15 @@ import { inject, injectable } from 'inversify';
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import {
-  BaseController,
   DocumentExistsMiddleware,
+  ValidateObjectIdMiddleware
+} from '../../libs/rest/index.js';
+import {
+  BaseController,
   HttpError,
   HttpMethod,
   ValidateDtoMiddleware,
-  ValidateObjectIdMiddleware
+  PrivateRouteMiddleware
 } from '../../libs/rest/index.js';
 import { Logger } from '../../libs/logger/index.js';
 import { Component } from '../../types/index.js';
@@ -16,9 +19,6 @@ import { OfferService } from '../offer/offer-service.interface.js';
 import { CreateCommentDto } from './dto/create-comment.dto.js';
 import { fillDTO } from '../../helpers/index.js';
 import { CommentRdo } from './rdo/comment.rdo.js';
-import { TokenService } from '../../libs/token/token-service.interface.js';
-
-type AuthRequest = Request & { headers: { authorization?: string } };
 
 @injectable()
 export class CommentController extends BaseController {
@@ -26,7 +26,6 @@ export class CommentController extends BaseController {
     @inject(Component.Logger) protected readonly logger: Logger,
     @inject(Component.CommentService) private readonly commentService: CommentService,
     @inject(Component.OfferService) private readonly offerService: OfferService,
-    @inject(Component.TokenService) private readonly tokenService: TokenService,
   ) {
     super(logger);
     this.logger.info('Register routes for CommentController...');
@@ -46,28 +45,12 @@ export class CommentController extends BaseController {
       method: HttpMethod.Post,
       handler: this.create,
       middlewares: [
+        new PrivateRouteMiddleware(),
         new ValidateObjectIdMiddleware('offerId'),
         new ValidateDtoMiddleware(CreateCommentDto),
         new DocumentExistsMiddleware(this.offerService, 'Offer', 'offerId'),
       ]
     });
-  }
-
-  private getUserIdOrThrow(req: AuthRequest): string {
-    const raw = req.headers.authorization ?? '';
-    const match = raw.match(/^Bearer\s+(.+)$/i);
-    const token = match?.[1];
-
-    if (!token) {
-      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Authorization required', 'CommentController');
-    }
-
-    const userId = this.tokenService.getUserId(token);
-    if (!userId) {
-      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Invalid token', 'CommentController');
-    }
-
-    return userId;
   }
 
   public async index(req: Request, res: Response): Promise<void> {
@@ -76,9 +59,15 @@ export class CommentController extends BaseController {
     this.ok(res, fillDTO(CommentRdo, comments));
   }
 
-  public async create(req: AuthRequest, res: Response): Promise<void> {
+  //{ body, tokenPayload }: CreateCommentRequest,
+  //const comment = await this.commentService.create({ ...body, userId: tokenPayload.id });
+
+  public async create(req: Request, res: Response): Promise<void> {
     const offerId = req.params.offerId;
-    const authorId = this.getUserIdOrThrow(req);
+    const authorId = req.tokenPayload?.id;
+    if (!authorId) {
+      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Unauthorized', 'CommentController');
+    }
     const dto = req.body as CreateCommentDto;
 
     const created = await this.commentService.create(dto, offerId, authorId);

@@ -18,6 +18,41 @@ export class DefaultOfferService implements OfferService {
     @inject(Component.FavoriteService) private readonly favoriteService: FavoriteService,
   ) {}
 
+  private async applyFavoriteFlags(
+    offers: DocumentType<OfferEntity>[],
+    userId?: string
+  ): Promise<DocumentType<OfferEntity>[]> {
+    if (!userId) {
+      for (const offer of offers) {
+        offer.isFavorite = false;
+      }
+      return offers;
+    }
+
+    const favoriteOfferIds = new Set(await this.favoriteService.findOfferIdsByUserId(userId));
+    for (const offer of offers) {
+      offer.isFavorite = favoriteOfferIds.has(offer.id);
+    }
+    return offers;
+  }
+
+  private async applyFavoriteFlag(
+    offer: DocumentType<OfferEntity> | null,
+    userId?: string
+  ): Promise<DocumentType<OfferEntity> | null> {
+    if (!offer) {
+      return null;
+    }
+
+    if (!userId) {
+      offer.isFavorite = false;
+      return offer;
+    }
+
+    offer.isFavorite = await this.favoriteService.exists(userId, offer.id);
+    return offer;
+  }
+
   public async create(dto: CreateOfferDto): Promise<DocumentType<OfferEntity>> {
     const result = await this.offerModel.create({
       ...dto,
@@ -28,44 +63,53 @@ export class DefaultOfferService implements OfferService {
     return result;
   }
 
-  public async findById(offerId: string): Promise<DocumentType<OfferEntity> | null> {
-    return this.offerModel.findById(offerId).populate('author').exec();
+  public async findById(offerId: string, userId?: string): Promise<DocumentType<OfferEntity> | null> {
+    const offer = await this.offerModel.findById(offerId).populate('author').exec();
+    return this.applyFavoriteFlag(offer, userId);
   }
 
-  public async find(limit = 60): Promise<DocumentType<OfferEntity>[]> {
-    return this.offerModel
+  public async find(limit = 60, userId?: string): Promise<DocumentType<OfferEntity>[]> {
+    const offers = await this.offerModel
       .find()
       .sort({ publishedDate: -1 })
       .limit(limit)
       .populate('author')
       .exec();
+
+    return this.applyFavoriteFlags(offers, userId);
   }
 
-  public async findNew(limit: number): Promise<DocumentType<OfferEntity>[]> {
-    return this.offerModel
+  public async findNew(limit: number, userId?: string): Promise<DocumentType<OfferEntity>[]> {
+    const offers = await this.offerModel
       .find()
       .sort({ publishedDate: -1 })
       .limit(limit)
       .populate('author')
       .exec();
+
+    return this.applyFavoriteFlags(offers, userId);
   }
 
-  public async findDiscussed(limit: number): Promise<DocumentType<OfferEntity>[]> {
-    return this.offerModel
+  public async findDiscussed(limit: number, userId?: string): Promise<DocumentType<OfferEntity>[]> {
+    const offers = await this.offerModel
       .find()
       .sort({ commentsCount: -1, publishedDate: -1 })
       .limit(limit)
       .populate('author')
       .exec();
+
+    return this.applyFavoriteFlags(offers, userId);
   }
 
-  public async findPremiumByCity(city: string, limit = 3): Promise<DocumentType<OfferEntity>[]> {
-    return this.offerModel
+  public async findPremiumByCity(city: string, limit = 3, userId?: string): Promise<DocumentType<OfferEntity>[]> {
+    const offers = await this.offerModel
       .find({ city, isPremium: true })
       .sort({ publishedDate: -1 })
       .limit(limit)
       .populate('author')
       .exec();
+
+    return this.applyFavoriteFlags(offers, userId);
   }
 
   public async updateById(offerId: string, dto: UpdateOfferDto, userId: string): Promise<DocumentType<OfferEntity> | null> {
@@ -107,11 +151,16 @@ export class DefaultOfferService implements OfferService {
       return [];
     }
 
-    return this.offerModel
+    const offers = await this.offerModel
       .find({ _id: { $in: offerIds } })
       .sort({ publishedDate: -1 })
       .populate('author')
       .exec();
+
+    for (const offer of offers) {
+      offer.isFavorite = true;
+    }
+    return offers;
   }
 
   public async setFavorite(userId: string, offerId: string, isFavorite: boolean): Promise<boolean> {

@@ -6,6 +6,7 @@ import {
   DocumentExistsMiddleware,
   HttpError,
   HttpMethod, UploadFileMiddleware,
+  PrivateRouteMiddleware,
   ValidateDtoMiddleware,
   ValidateObjectIdMiddleware,
 } from '../../libs/rest/index.js';
@@ -17,10 +18,10 @@ import {Config, RestSchema} from '../../libs/config/index.js';
 import {fillDTO} from '../../helpers/index.js';
 import {UserRdo} from './rdo/user.rdo.js';
 import {LoginUserRequest} from './login-user-request.type.js';
-import { createSHA256 } from '../../helpers/hash.js';
-import { TokenService } from '../../libs/token/token-service.interface.js';
 import { CreateUserDto } from './dto/create-user.dto.js';
 import { LoginUserDto } from './dto/login-user.dto.js';
+import { AuthService } from '../auth/index.js';
+import { LoggedUserRdo } from './rdo/logged-user.rdo.js';
 
 
 @injectable()
@@ -29,7 +30,7 @@ export class UserController extends BaseController {
     @inject(Component.Logger) protected readonly logger: Logger,
     @inject(Component.UserService) private readonly userService: UserService,
     @inject(Component.Config) private readonly configService: Config<RestSchema>,
-    @inject(Component.TokenService) private readonly tokenService: TokenService,
+    @inject(Component.AuthService) private readonly authService: AuthService,
   ) {
     super(logger);
     this.logger.info('Register routes for UserController…');
@@ -51,7 +52,8 @@ export class UserController extends BaseController {
     this.addRoute({
       path: '/login',
       method: HttpMethod.Get,
-      handler: this.checkAuth
+      handler: this.checkAuth,
+      middlewares: [new PrivateRouteMiddleware()],
     });
 
 
@@ -85,45 +87,31 @@ export class UserController extends BaseController {
     this.created(res, fillDTO(UserRdo, result));
   }
 
+  //public async login(
+  //     { body }: LoginUserRequest,
+  //     res: Response,
+  //   ): Promise<void> {
+  //     const user = await this.authService.verify(body);
+  //     const token = await this.authService.authenticate(user);
+  //     const responseData = fillDTO(LoggedUserRdo, {
+  //       email: user.email,
+  //       token,
+  //     });
+  //     this.ok(res, responseData);
+
   public async login(
     { body }: LoginUserRequest,
     res: Response,
   ): Promise<void> {
-    const existsUser = await this.userService.findByEmail(body.email);
-
-    if (! existsUser) {
-      throw new HttpError(
-        StatusCodes.UNAUTHORIZED,
-        `User with email ${body.email} not found.`,
-        'UserController',
-      );
-    }
-
-    const passwordHash = createSHA256(body.password, this.configService.get('SALT'));
-    if (existsUser.getPassword() !== passwordHash) {
-      throw new HttpError(
-        StatusCodes.UNAUTHORIZED,
-        'Invalid password.',
-        'UserController',
-      );
-    }
-
-    const token = this.tokenService.sign(existsUser.id);
-    this.ok(res, { token });
+    const user = await this.authService.verify(body);
+    const token = await this.authService.authenticate(user);
+    this.ok(res, fillDTO(LoggedUserRdo, { email: user.email, token }));
   }
 
   public async checkAuth(req: Request, res: Response): Promise<void> {
-    const raw = req.headers.authorization ?? '';
-    const match = raw.match(/^Bearer\s+(.+)$/i);
-    const token = match?.[1];
-
-    if (!token) {
-      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Authorization required', 'UserController');
-    }
-
-    const userId = this.tokenService.getUserId(token);
+    const userId = req.tokenPayload?.id;
     if (!userId) {
-      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Invalid token', 'UserController');
+      throw new HttpError(StatusCodes.UNAUTHORIZED, 'Unauthorized', 'UserController');
     }
 
     const user = await this.userService.findById(userId);

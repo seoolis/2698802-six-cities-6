@@ -3,6 +3,7 @@ import {Request, Response} from 'express';
 import {StatusCodes} from 'http-status-codes';
 import {
   BaseController,
+  DocumentExistsMiddleware,
   HttpError,
   HttpMethod, UploadFileMiddleware,
   ValidateDtoMiddleware,
@@ -61,6 +62,7 @@ export class UserController extends BaseController {
       middlewares: [
         new ValidateObjectIdMiddleware('userId'),
         new UploadFileMiddleware(this.configService.get('UPLOAD_DIRECTORY'), 'avatar'),
+        new DocumentExistsMiddleware(this.userService, 'User', 'userId'),
       ]
     });
   }
@@ -132,9 +134,16 @@ export class UserController extends BaseController {
     this.ok(res, fillDTO(UserRdo, user));
   }
 
-  public async uploadAvatar(req: Request, res: Response) {
-    this.created(res, {
-      filepath: req.file?.path
-    });
+  public async uploadAvatar(req: Request, res: Response): Promise<void> {
+    const userId = req.params.userId;
+
+    if (!req.file) {
+      throw new HttpError(StatusCodes.BAD_REQUEST, 'Avatar file is required', 'UserController');
+    }
+
+    const avatarPath = `/upload/${req.file.filename}`;
+    const user = await this.userService.updateAvatar(userId, avatarPath);
+
+    this.created(res, fillDTO(UserRdo, user));
   }
 }

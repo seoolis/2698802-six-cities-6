@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import multer, { diskStorage } from 'multer';
 import { extension } from 'mime-types';
-import * as crypto from 'node:crypto';
+import { nanoid } from 'nanoid';
 import { Middleware } from './middleware.interface.js';
 
 export class UploadFileMiddleware implements Middleware {
@@ -14,9 +14,9 @@ export class UploadFileMiddleware implements Middleware {
     const storage = diskStorage({
       destination: this.uploadDirectory,
       filename: (_req, file, callback) => {
-        const fileExtention = extension(file.mimetype);
-        const filename = crypto.randomUUID();
-        callback(null, `${filename}.${fileExtention}`);
+        const fileExtension = extension(file.mimetype) ?? 'bin';
+        const filename = nanoid();
+        callback(null, `${filename}.${fileExtension}`);
       }
     });
 

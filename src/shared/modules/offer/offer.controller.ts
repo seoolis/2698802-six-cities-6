@@ -124,9 +124,6 @@ export class OfferController extends BaseController {
   public async show(req: Request, res: Response): Promise<void> {
     const offerId = req.params.offerId;
     const offer = await this.offerService.findById(offerId);
-    if (!offer) {
-      throw new HttpError(StatusCodes.NOT_FOUND, `Offer ${offerId} not found`, 'OfferController');
-    }
 
     this.ok(res, fillDTO(OfferRdo, offer));
   }
@@ -147,18 +144,9 @@ export class OfferController extends BaseController {
     const offerId = req.params.offerId;
     const dto = req.body as UpdateOfferDto;
 
-    const offer = await this.offerService.findById(offerId);
-    if (!offer) {
-      throw new HttpError(StatusCodes.NOT_FOUND, `Offer ${offerId} not found`, 'OfferController');
-    }
-
-    if (offer.author.toString() !== userId) {
-      throw new HttpError(StatusCodes.FORBIDDEN, 'Forbidden', 'OfferController');
-    }
-
     const updated = await this.offerService.updateById(offerId, dto, userId);
     if (!updated) {
-      throw new HttpError(StatusCodes.NOT_FOUND, `Offer ${offerId} not found`, 'OfferController');
+      throw new HttpError(StatusCodes.FORBIDDEN, 'Forbidden', 'OfferController');
     }
 
     this.ok(res, fillDTO(OfferRdo, updated));
@@ -168,18 +156,9 @@ export class OfferController extends BaseController {
     const userId = this.getUserIdOrThrow(req);
     const offerId = req.params.offerId;
 
-    const offer = await this.offerService.findById(offerId);
-    if (!offer) {
-      throw new HttpError(StatusCodes.NOT_FOUND, `Offer ${offerId} not found`, 'OfferController');
-    }
-
-    if (offer.author.toString() !== userId) {
-      throw new HttpError(StatusCodes.FORBIDDEN, 'Forbidden', 'OfferController');
-    }
-
     const deleted = await this.offerService.deleteById(offerId, userId);
     if (!deleted) {
-      throw new HttpError(StatusCodes.NOT_FOUND, `Offer ${offerId} not found`, 'OfferController');
+      throw new HttpError(StatusCodes.FORBIDDEN, 'Forbidden', 'OfferController');
     }
 
     res.status(StatusCodes.NO_CONTENT).send();

@@ -22,6 +22,7 @@ import { CreateUserDto } from './dto/create-user.dto.js';
 import { LoginUserDto } from './dto/login-user.dto.js';
 import { AuthService } from '../auth/index.js';
 import { LoggedUserRdo } from './rdo/logged-user.rdo.js';
+import { UploadUserAvatarRdo } from './rdo/upload-user-avatar.rdo.js';
 
 
 @injectable()
@@ -93,11 +94,8 @@ export class UserController extends BaseController {
   //   ): Promise<void> {
   //     const user = await this.authService.verify(body);
   //     const token = await this.authService.authenticate(user);
-  //     const responseData = fillDTO(LoggedUserRdo, {
-  //       email: user.email,
-  //       token,
-  //     });
-  //     this.ok(res, responseData);
+  //     const responseData = fillDTO(LoggedUserRdo, user);
+  //     this.ok(res, Object.assign(responseData, { token }));
 
   public async login(
     { body }: LoginUserRequest,
@@ -122,16 +120,10 @@ export class UserController extends BaseController {
     this.ok(res, fillDTO(UserRdo, user));
   }
 
-  public async uploadAvatar(req: Request, res: Response): Promise<void> {
-    const userId = req.params.userId;
-
-    if (!req.file) {
-      throw new HttpError(StatusCodes.BAD_REQUEST, 'Avatar file is required', 'UserController');
-    }
-
-    const avatarPath = `/upload/${req.file.filename}`;
-    const user = await this.userService.updateAvatar(userId, avatarPath);
-
-    this.created(res, fillDTO(UserRdo, user));
+  public async uploadAvatar({ params, file }: Request, res: Response) {
+    const { userId } = params;
+    const uploadFile = { avatarPath: file?.filename };
+    await this.userService.updateById(userId, uploadFile);
+    this.created(res, fillDTO(UploadUserAvatarRdo, { filepath: uploadFile.avatarPath }));
   }
 }

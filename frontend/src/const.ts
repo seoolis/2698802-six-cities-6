@@ -51,6 +51,8 @@ export enum ApiRoute {
   Comments = '/comments',
   Favorite = '/favorite',
   Premium = '/premium',
+  Users = '/users',
+  Registration = '/users/register',
 }
 
 export enum AuthorizationStatus {
@@ -73,8 +75,11 @@ export enum StoreSlice {
 }
 
 export enum HttpCode {
+  OK = 200,
+  CREATED = 201,
   NotFound = 404,
   NoAuth = 401,
+  CONFLICT = 409,
 }
 
 export enum SubmitStatus {

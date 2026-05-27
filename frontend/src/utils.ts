@@ -1,4 +1,4 @@
-  import { MAX_PERCENT_STARS_WIDTH, STARS_COUNT } from './const';
+import { MAX_PERCENT_STARS_WIDTH, STARS_COUNT } from './const';
 
 export const formatDate = (date: string) => new Intl.DateTimeFormat(
   'en-US',
@@ -30,7 +30,3 @@ export class Token {
   }
 }
 
-//export const getTime = () => {
-  //   const now = new Date();
-  //   return now.toISOString();
-  // };

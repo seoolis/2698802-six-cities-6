@@ -26,9 +26,9 @@ export const URL_MARKER_DEFAULT = 'img/pin.svg';
 export const URL_MARKER_CURRENT = 'img/pin-active.svg';
 export const ZOOM = 13;
 
-export const MAX_COMMENTS = 10;
-export const MIN_COMMENT_LENGTH = 50;
-export const MAX_COMMENT_LENGTH = 300;
+export const MAX_COMMENTS = 50;
+export const MIN_COMMENT_LENGTH = 5;
+export const MAX_COMMENT_LENGTH = 1024;
 
 
 export enum AppRoute {
@@ -43,16 +43,13 @@ export enum AppRoute {
 }
 
 export enum ApiRoute {
-  Offers = '/hotels',
-  Login = '/login',
-  Logout = '/logout',
-  Register = '/register',
-  Avatar = '/avatar',
-  Comments = '/comments',
-  Favorite = '/favorite',
-  Premium = '/premium',
+  Offers = '/offers',
+  Login = '/users/login',
+  Register = '/users/register',
   Users = '/users',
-  Registration = '/users/register',
+  Comments = '/offers',
+  Favorite = '/favorites',
+  Premium = '/offers/premium',
 }
 
 export enum AuthorizationStatus {

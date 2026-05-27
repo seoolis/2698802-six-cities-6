@@ -1,7 +1,13 @@
 import {inject, injectable} from 'inversify';
 import {Request, Response} from 'express';
 import {StatusCodes} from 'http-status-codes';
-import {BaseController, HttpError, HttpMethod} from '../../libs/rest/index.js';
+import {
+  BaseController,
+  HttpError,
+  HttpMethod, UploadFileMiddleware,
+  ValidateDtoMiddleware,
+  ValidateObjectIdMiddleware,
+} from '../../libs/rest/index.js';
 import {Logger} from '../../libs/logger/index.js';
 import {Component} from '../../types/index.js';
 import {CreateUserRequest} from './create-user-request.type.js';
@@ -12,6 +18,9 @@ import {UserRdo} from './rdo/user.rdo.js';
 import {LoginUserRequest} from './login-user-request.type.js';
 import { createSHA256 } from '../../helpers/hash.js';
 import { TokenService } from '../../libs/token/token-service.interface.js';
+import { CreateUserDto } from './dto/create-user.dto.js';
+import { LoginUserDto } from './dto/login-user.dto.js';
+
 
 @injectable()
 export class UserController extends BaseController {
@@ -27,19 +36,32 @@ export class UserController extends BaseController {
     this.addRoute({
       path: '/register',
       method: HttpMethod.Post,
-      handler: this.create
+      handler: this.create,
+      middlewares: [new ValidateDtoMiddleware(CreateUserDto)]
     });
 
     this.addRoute({
       path: '/login',
       method: HttpMethod.Post,
-      handler: this.login
+      handler: this.login,
+      middlewares: [new ValidateDtoMiddleware(LoginUserDto)]
     });
 
     this.addRoute({
       path: '/login',
       method: HttpMethod.Get,
       handler: this.checkAuth
+    });
+
+
+    this.addRoute({
+      path: '/:userId/avatar',
+      method: HttpMethod.Post,
+      handler: this.uploadAvatar,
+      middlewares: [
+        new ValidateObjectIdMiddleware('userId'),
+        new UploadFileMiddleware(this.configService.get('UPLOAD_DIRECTORY'), 'avatar'),
+      ]
     });
   }
 
@@ -108,5 +130,11 @@ export class UserController extends BaseController {
     }
 
     this.ok(res, fillDTO(UserRdo, user));
+  }
+
+  public async uploadAvatar(req: Request, res: Response) {
+    this.created(res, {
+      filepath: req.file?.path
+    });
   }
 }

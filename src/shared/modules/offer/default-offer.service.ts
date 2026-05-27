@@ -41,6 +41,24 @@ export class DefaultOfferService implements OfferService {
       .exec();
   }
 
+  public async findNew(limit: number): Promise<DocumentType<OfferEntity>[]> {
+    return this.offerModel
+      .find()
+      .sort({ publishedDate: -1 })
+      .limit(limit)
+      .populate('author')
+      .exec();
+  }
+
+  public async findDiscussed(limit: number): Promise<DocumentType<OfferEntity>[]> {
+    return this.offerModel
+      .find()
+      .sort({ commentsCount: -1, publishedDate: -1 })
+      .limit(limit)
+      .populate('author')
+      .exec();
+  }
+
   public async findPremiumByCity(city: string, limit = 3): Promise<DocumentType<OfferEntity>[]> {
     return this.offerModel
       .find({ city, isPremium: true })
@@ -98,5 +116,9 @@ export class DefaultOfferService implements OfferService {
 
   public async setFavorite(userId: string, offerId: string, isFavorite: boolean): Promise<boolean> {
     return this.favoriteService.toggle(userId, offerId, isFavorite);
+  }
+
+  public async exists(documentId: string): Promise<boolean> {
+    return await this.offerModel.exists({ _id: documentId }) !== null;
   }
 }

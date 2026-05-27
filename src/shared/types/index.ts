@@ -10,3 +10,5 @@ export * from './enums/user.type.enum.js';
 export * from './enums/component.enum.js';
 
 export * from './mock-server-data.type.js';
+
+export * from './document-exists.interface.js';

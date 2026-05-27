@@ -24,8 +24,14 @@ const Register = (): JSX.Element => {
     e.preventDefault();
     const form = e.currentTarget;
 
-    const formData = new FormData(form) as Iterable<[UserRegister]>;
-    const data = Object.fromEntries(formData);
+    const formData = new FormData(form);
+    const data: UserRegister = {
+      name: String(formData.get('name') ?? ''),
+      email: String(formData.get('email') ?? ''),
+      password: String(formData.get('password') ?? ''),
+      isPro: formData.get('isPro') === 'on',
+      avatar,
+    };
 
     dispatch(registerUser(data));
   };
@@ -105,14 +111,14 @@ const Register = (): JSX.Element => {
                 id="isPro"
               />
               <label htmlFor="isPro" className="register-form__is-pro-label">
-          Create pro account
+                Create pro account
               </label>
             </div>
             <button
               className="login__submit form__submit button"
               type="submit"
             >
-                Sign up
+              Sign up
             </button>
           </form>
         </section>

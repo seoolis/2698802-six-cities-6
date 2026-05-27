@@ -15,8 +15,11 @@ const Login = (): JSX.Element => {
     e.preventDefault();
     const form = e.currentTarget;
 
-    const formData = new FormData(form) as Iterable<[UserAuth]>;
-    const data = Object.fromEntries(formData);
+    const formData = new FormData(form);
+    const data: UserAuth = {
+      email: String(formData.get('email') ?? ''),
+      password: String(formData.get('password') ?? ''),
+    };
 
     dispatch(loginUser(data));
   };
@@ -58,7 +61,7 @@ const Login = (): JSX.Element => {
               className="login__submit form__submit button"
               type="submit"
             >
-                Sign in
+              Sign in
             </button>
           </form>
         </section>

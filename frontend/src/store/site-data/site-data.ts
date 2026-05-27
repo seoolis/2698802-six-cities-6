@@ -62,24 +62,31 @@ export const siteData = createSlice({
         state.commentStatus = SubmitStatus.Pending;
       })
       .addCase(postComment.fulfilled, (state, action) => {
-        state.comments = action.payload;
+        state.comments = [action.payload, ...state.comments];
         state.commentStatus = SubmitStatus.Fullfilled;
       })
       .addCase(postComment.rejected, (state) => {
         state.commentStatus = SubmitStatus.Rejected;
       })
       .addCase(postFavorite.fulfilled, (state, action) => {
-        const updatedOffer = action.payload;
-        state.offers = state.offers.map((offer) => offer.id === updatedOffer.id ? updatedOffer : offer);
+        const { id, isFavorite } = action.payload;
+        state.offers = state.offers.map((offer) => offer.id === id ? { ...offer, isFavorite } : offer);
+        state.premiumOffers = state.premiumOffers.map((offer) => offer.id === id ? { ...offer, isFavorite } : offer);
 
-        if (state.offer && state.offer.id === updatedOffer.id) {
-          state.offer = updatedOffer;
+        if (state.offer && state.offer.id === id) {
+          state.offer = { ...state.offer, isFavorite };
         }
 
-        if (updatedOffer.isFavorite) {
-          state.favoriteOffers = state.favoriteOffers.concat(updatedOffer);
-        } else {
-          state.favoriteOffers = state.favoriteOffers.filter((favoriteOffer) => favoriteOffer.id !== updatedOffer.id);
+        state.favoriteOffers = state.favoriteOffers.filter((favoriteOffer) => favoriteOffer.id !== id);
+
+        if (isFavorite) {
+          const candidate = state.offers.find((offer) => offer.id === id) ??
+            state.premiumOffers.find((offer) => offer.id === id) ??
+            (state.offer && state.offer.id === id ? state.offer : undefined);
+
+          if (candidate) {
+            state.favoriteOffers = state.favoriteOffers.concat(candidate);
+          }
         }
       });
   }

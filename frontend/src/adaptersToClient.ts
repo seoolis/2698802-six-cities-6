@@ -1,55 +1,63 @@
-import { CityLocation } from './const';
-import { CommentRdo } from './dto/comment/comment-rdo';
-import { OfferPreviewRdo } from './dto/offer/offer-preview-rdo';
-import { OfferRdo } from './dto/offer/offer-rdo';
-import { UserRdo } from './dto/user/user-rdo';
-import { Comment, Offer, OfferPreview, User } from './types/types';
+import { CommentRdo } from './dto/comment/comment.dto';
+import { OfferPreviewRdo } from './dto/offer/offer-preview.rdo';
+import { OfferRdo } from './dto/offer/offer.dto';
+import { UserRdo } from './dto/user/user.dto';
+import { CityName, Comment, Offer, OfferPreview, User } from './types/types';
+
+const getOfferId = (offer: { id?: string; _id?: string }): string => offer.id ?? offer._id ?? '';
 
 export const adaptOfferPreviewToClient = (offer: OfferPreviewRdo): OfferPreview => ({
-  id: offer.id,
+  id: getOfferId(offer),
   title: offer.title,
   previewImage: offer.previewImage,
   isPremium: offer.isPremium,
   isFavorite: offer.isFavorite,
-  type: offer.housingType,
+  type: offer.type,
   price: offer.price,
   rating: offer.rating,
-  cityName: offer.city
+  cityName: typeof offer.city === 'string' ? offer.city : offer.city.name,
+  location: {
+    latitude: offer.city.latitude,
+    longitude: offer.city.longitude,
+  },
 });
 
 export const adaptOfferToClient = (offer: OfferRdo): Offer => ({
-  id: offer.id,
+  id: getOfferId(offer),
   title: offer.title,
   description: offer.description,
   city: {
-    name: offer.city,
-    location: CityLocation[offer.city]
+    name: offer.city.name,
+    location: {
+      latitude: offer.city.latitude,
+      longitude: offer.city.longitude,
+    },
   },
   previewImage: offer.previewImage,
-  images: offer.housingImages,
+  images: offer.photos,
   isFavorite: offer.isFavorite,
   isPremium: offer.isPremium,
-  type: offer.housingType,
+  type: offer.type,
   price: offer.price,
   goods: offer.amenities,
-  bedrooms: offer.roomsCount,
-  maxAdults: offer.guestsCount,
+  bedrooms: offer.rooms,
+  maxAdults: offer.guests,
   location: offer.coordinates,
   rating: offer.rating,
-  host: adaptUserToClient(offer.author)
+  host: adaptUserToClient(offer.author),
 });
 
-export const adaptCommentToClient = (comment: CommentRdo): Comment => ({
-  id: comment.id,
+export const adaptCommentToClient = (comment: CommentRdo, index: number): Comment => ({
+  id: `${comment.publishDate}-${index}`,
   comment: comment.text,
-  date: comment.publishDate.toString(),
+  date: String(comment.publishDate),
   rating: comment.rating,
-  user: adaptUserToClient(comment.author)
+  user: adaptUserToClient(comment.author),
 });
 
 export const adaptUserToClient = (user: UserRdo): User => ({
   name: user.name,
   email: user.email,
-  avatarUrl: user.avatar,
-  type: user.type
+  avatarUrl: user.avatarPath,
+  isPro: user.type === 'pro',
 });
